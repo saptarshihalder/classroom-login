@@ -1,0 +1,17 @@
+name = "pde-board-sync"
+main = "src/index.js"
+compatibility_date = "2026-08-20"
+
+[vars]
+ADMIN_EMAIL = "you@example.com"
+GITHUB_OWNER = "saptarshihalder"
+GITHUB_REPO = "classroom-login"
+GITHUB_BRANCH = "main"
+PUBLIC_SITE_URL = "https://saptarshihalder.github.io/classroom-login/"
+
+[[kv_namespaces]]
+binding = "STATE"
+id = "replace-with-kv-id"
+
+[triggers]
+crons = ["*/10 * * * *"]

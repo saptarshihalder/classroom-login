@@ -1,4 +1,9 @@
 {
+  "course": {
+    "name": "Partial Differential Equations",
+    "short": "PDE",
+    "about": "Announcements and shared course material"
+  },
   "updated": null,
   "items": []
 }
