@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f3f1eb">
+  <title>PDE board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="rail">
+      <a class="mark" href="./" aria-label="PDE board">∂</a>
+      <nav class="nav" aria-label="Sections">
+        <button class="navbtn on" data-tab="all" aria-label="Stream">⌁</button>
+        <button class="navbtn" data-tab="work" aria-label="Coursework">□</button>
+        <button class="navbtn" data-tab="file" aria-label="Materials">↗</button>
+      </nav>
+      <div class="railfoot">PDE</div>
+    </aside>
+
+    <main class="page">
+      <header class="top">
+        <div>
+          <div class="crumb">course mirror <span>·</span> read only</div>
+          <h1>Partial Differential Equations</h1>
+        </div>
+        <button id="rf" class="refresh" type="button">refresh</button>
+      </header>
+
+      <section class="hero">
+        <div class="herohead">
+          <div>
+            <span class="tag">audit board</span>
+            <h2>Stream</h2>
+          </div>
+          <div class="syn"><i id="dot"></i><span id="sync">not synced yet</span></div>
+        </div>
+        <p>One quiet place for announcements, course work and material links.</p>
+      </section>
+
+      <section class="tools">
+        <div class="tabs" role="tablist">
+          <button class="tab on" data-tab="all" role="tab">all</button>
+          <button class="tab" data-tab="post" role="tab">announcements</button>
+          <button class="tab" data-tab="work" role="tab">coursework</button>
+          <button class="tab" data-tab="file" role="tab">materials</button>
+        </div>
+        <label class="search">
+          <span>⌕</span>
+          <input id="find" type="search" placeholder="search the stream" autocomplete="off">
+        </label>
+      </section>
+
+      <section id="list" class="feed" aria-live="polite">
+        <div class="loading">
+          <div></div><div></div><div></div>
+        </div>
+      </section>
+
+      <footer>
+        <span>pde board</span>
+        <span id="count">0 posts</span>
+      </footer>
+    </main>
+  </div>
+  <script src="./app.js" defer></script>
+</body>
+</html>
