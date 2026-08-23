@@ -1,0 +1,16 @@
+{
+  "name": "PDE board",
+  "short_name": "PDE",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#eef1ef",
+  "theme_color": "#214f3d",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
