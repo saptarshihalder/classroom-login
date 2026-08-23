@@ -465,7 +465,7 @@ async function change(r,e,on){
 
 async function route(r,e){
   let u=new URL(r.url),p=u.pathname
-  await e.STATE.put('site:origin',u.origin)
+  if(await e.STATE.get('site:origin')!==u.origin)await e.STATE.put('site:origin',u.origin)
   if(p==='/login')return auth(r,e)
   if(p==='/oauth')return oauth(r,e)
   if(p==='/health')return js({ok:true,connected:!!await e.STATE.get('google:refresh'),stale:await e.STATE.get('google:stale')==='1',course:await e.STATE.get('course:name')||null,synced:await e.STATE.get('synced:at')||null})
