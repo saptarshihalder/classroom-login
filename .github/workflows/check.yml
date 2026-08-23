@@ -1,0 +1,16 @@
+name: check
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check app.js
+      - run: node -e "JSON.parse(require('fs').readFileSync('data/feed.json','utf8'))"
+      - run: test -f index.html && test -f styles.css && test -f app.js
+      - run: '! grep -RIE "client_secret|refresh_token|access_token" --exclude-dir=.git .'
