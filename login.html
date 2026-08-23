@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f8f6">
+<meta name="description" content="Sign in to publish course announcements and notes to the public board.">
+<meta name="robots" content="noindex">
+<title>Course sign-in</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500&display=swap" rel="stylesheet">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body class="plain">
+<header class="bar">
+  <a class="mark" href="./" aria-label="Course home">∂</a>
+  <div class="barname">
+    <strong>Course sign-in</strong>
+    <span>Publishing side</span>
+  </div>
+  <div class="baracts"><a class="btn ghost" href="./">Back to the board</a></div>
+</header>
+
+<main class="solo">
+  <section class="card signin">
+    <h1>Sign in to publish</h1>
+    <p>Signing in is only for whoever keeps the board up to date. It opens the course workspace, where announcements and notes are pulled in and you pick what the public board shows.</p>
+    <a id="go" class="btn wide" href="#" hidden>Continue with Google</a>
+    <p id="note" class="note" hidden></p>
+    <ul class="steps">
+      <li>Sign in with the Google account that can see the course.</li>
+      <li>Pick the course, then sync it.</li>
+      <li>Choose the posts to publish, or leave auto-publish on.</li>
+    </ul>
+  </section>
+
+  <section class="card signin">
+    <h2>Looking for the notes?</h2>
+    <p>Students and anyone else do not need an account. Everything published is on the open board.</p>
+    <a class="btn ghost wide" href="./">Open the course board</a>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>Public copy of the course board</span>
+  <a href="./">Course board</a>
+</footer>
+
+<script src="./login.js" defer></script>
+</body>
+</html>
