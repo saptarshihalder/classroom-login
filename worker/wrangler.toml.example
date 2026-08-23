@@ -1,13 +1,18 @@
-name = "pde-board-sync"
+name = "course-board-sync"
 main = "src/index.js"
 compatibility_date = "2026-08-20"
 
 [vars]
 ADMIN_EMAIL = "you@example.com"
+COURSE_SHORT = "PDE"
 GITHUB_OWNER = "saptarshihalder"
 GITHUB_REPO = "classroom-login"
 GITHUB_BRANCH = "main"
 PUBLIC_SITE_URL = "https://saptarshihalder.github.io/classroom-login/"
+# largest attachment copied to the public site, in megabytes
+MAX_FILE_MB = "20"
+# attachments fetched per scheduled run
+MIRROR_BATCH = "6"
 
 [[kv_namespaces]]
 binding = "STATE"
