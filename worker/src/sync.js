@@ -152,8 +152,8 @@ export async function mirror(e,slug,acct,budget){
 }
 
 /* What the public board reads. */
-export async function board(e,slug){
-  let rec=await db.course(e,slug)
+export async function board(e,slug,knownCourse){
+  let rec=knownCourse||await db.course(e,slug)
   if(!rec||!rec.live)return null
   let list=await db.items(e,slug),chosen=await db.published(e,slug)
   let topics=new Map((rec.topics||[]).map(t=>[t.id,t.name]))
@@ -186,16 +186,17 @@ export async function board(e,slug){
 }
 
 /* Keep the numbers on the course record and the directory in step. */
-export async function settle(e,slug){
-  let made=await board(e,slug)
-  let rec=await db.course(e,slug)
+export async function settle(e,slug,knownCourse){
+  let rec=knownCourse||await db.course(e,slug)
   if(!rec)return null
-  await db.saveCourse(e,{
+  let made=await board(e,slug,rec)
+  let saved={
     ...rec,
     posts:made?made.counts.posts:0,
     files:made?made.counts.files:0,
     updated:new Date().toISOString()
-  })
-  await db.rebuildDirectory(e)
+  }
+  await db.saveCourse(e,saved)
+  await db.rebuildDirectory(e,saved)
   return made
 }

@@ -109,3 +109,15 @@ test('settle keeps the counts and directory in step', async () => {
   assert.equal(rec.files,1)
   assert.equal((await db.directory(e))[0].slug,'pde')
 })
+
+test('settle can publish a known course without reading stale KV state', async () => {
+  let e=env(fakeKV())
+  let stale={slug:'pde',courseId:'C1',name:'PDE',publishers:['u1'],live:false}
+  await db.saveCourse(e,stale)
+  await db.saveItems(e,'pde',[{id:'a:1',kind:'post',title:'',text:'public',created:'2026-08-01T00:00:00Z',links:[],drive:[]}])
+  await db.savePublished(e,'pde',new Set(['a:1']))
+
+  await settle(e,'pde',{...stale,live:true})
+  assert.equal((await db.course(e,'pde')).live,true)
+  assert.deepEqual((await db.directory(e)).map(x=>x.slug),['pde'])
+})

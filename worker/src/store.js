@@ -79,12 +79,12 @@ export async function forget(e,slug){
 }
 
 /* The directory is small and read on every visit, so it is kept built. */
-export async function rebuildDirectory(e){
+export async function rebuildDirectory(e,knownCourse){
   let out=[],cursor
   do{
     let page=await e.STATE.list({prefix:'c:',cursor})
     for(let k of page.keys){
-      let c=await e.STATE.get(k.name,'json')
+      let c=k.name===`c:${knownCourse?.slug}`?knownCourse:await e.STATE.get(k.name,'json')
       if(!c?.live)continue
       out.push({
         slug:c.slug,name:c.name,short:c.short,section:c.section||'',
@@ -94,6 +94,14 @@ export async function rebuildDirectory(e){
     }
     cursor=page.list_complete?null:page.cursor
   }while(cursor)
+  if(knownCourse?.live&&!out.some(c=>c.slug===knownCourse.slug)){
+    let c=knownCourse
+    out.push({
+      slug:c.slug,name:c.name,short:c.short,section:c.section||'',
+      teachers:c.teachers||[],posts:c.posts||0,files:c.files||0,
+      updated:c.updated||null
+    })
+  }
   out.sort((a,b)=>new Date(b.updated||0)-new Date(a.updated||0))
   await write(e,'dir',out)
   return out

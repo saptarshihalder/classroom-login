@@ -152,8 +152,9 @@ async function route(r,e){
     return managePage(e,acct,slug,got.left?`Prepared ${got.done}. ${got.left} still queued.`:'Attachments are ready.')
   }
   if(path==='/live'){
-    await db.saveCourse(e,{...course,live:!course.live})
-    await sync.settle(e,slug)
+    let changed={...course,live:!course.live}
+    await db.saveCourse(e,changed)
+    await sync.settle(e,slug,changed)
     return managePage(e,acct,slug,course.live?'The board is down. Readers see nothing now.':'The board is up. Anyone with the link can read it.')
   }
   if(path==='/remove'){
