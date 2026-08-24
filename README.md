@@ -75,8 +75,32 @@ Workspace organisation.
 
 ### 2. Cloudflare
 
-The worker can be deployed without a terminal, which matters if the phone is the
-only thing to hand.
+With step 1 done, a script does the rest. From the repository folder:
+
+```bat
+powershell -ExecutionPolicy Bypass -File tools\setup.ps1
+```
+
+or on macOS, Linux or WSL:
+
+```bash
+bash tools/setup.sh
+```
+
+It installs what the worker needs, signs in to Cloudflare in the browser,
+creates the state store, writes `wrangler.toml`, deploys, and asks for the three
+credentials, which are typed in and stored with Cloudflare rather than written
+to disk. It finishes by printing the exact `/oauth` address to paste into the
+Google OAuth client.
+
+The parts of step 1 the script cannot do are the parts Google only exposes in a
+browser: creating the project, the consent screen and the OAuth client, and
+adding the redirect URI to it afterwards.
+
+#### without a terminal at all
+
+The worker can also be deployed from the Actions tab, which matters if the phone
+is the only thing to hand.
 
 In **Settings → Secrets and variables → Actions**, add these repository
 **secrets**:
@@ -108,7 +132,7 @@ Then run the **workspace** workflow from the Actions tab twice:
 2. with the box left unticked — this deploys the worker and stores the
    credentials
 
-To do the same from a terminal instead:
+Or step through it by hand:
 
 ```bash
 cd worker
