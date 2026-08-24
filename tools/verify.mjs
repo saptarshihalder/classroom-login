@@ -6,7 +6,7 @@ const fail=m=>problems.push(m)
 const read=p=>readFileSync(p,'utf8')
 
 const REQUIRED=[
-  'index.html','board.html','login.html',
+  'index.html','board.html','login.html','privacy.html',
   'directory.js','board.js','login.js','styles.css','icon.svg',
   'manifest.webmanifest','data/site.json',
   'worker/src/index.js','worker/src/store.js','worker/src/sync.js',
@@ -32,7 +32,7 @@ if(site){
 }
 
 /* every local file the pages ask for has to exist */
-for(const page of ['index.html','board.html','login.html']){
+for(const page of ['index.html','board.html','login.html','privacy.html']){
   if(!existsSync(page))continue
   const refs=[...read(page).matchAll(/(?:href|src)="([^"]+)"/g)].map(m=>m[1])
   for(const ref of refs){
