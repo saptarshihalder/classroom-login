@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       create_state:
-        description: Create the state store instead of deploying. Run this once, before the first deploy.
+        description: Create the state store and file bucket instead of deploying. Run this once, first.
         type: boolean
         default: false
 permissions:
@@ -24,10 +24,13 @@ jobs:
           node-version: 22
       - run: npm install
 
-      - name: create the state store
+      - name: create the state store and file bucket
         if: inputs.create_state
+        env:
+          BUCKET: ${{ vars.R2_BUCKET }}
         run: |
-          printf 'name = "course-board-sync"\nmain = "src/index.js"\ncompatibility_date = "2026-08-20"\n' > wrangler.toml
+          printf 'name = "course-boards"\nmain = "src/index.js"\ncompatibility_date = "2026-08-20"\n' > wrangler.toml
+          npx wrangler r2 bucket create "${BUCKET:-course-board-files}" 2>&1 | grep -v 'already exists' || true
           npx wrangler kv namespace create STATE
           echo "Put the id printed above into the KV_NAMESPACE_ID repository variable, then run this workflow again with the box left unticked."
 
@@ -35,13 +38,13 @@ jobs:
         if: ${{ !inputs.create_state }}
         env:
           KV_ID: ${{ vars.KV_NAMESPACE_ID }}
-          ADMIN: ${{ vars.ADMIN_EMAIL }}
-          SITE: ${{ vars.PUBLIC_SITE_URL }}
+          SITE: ${{ vars.SITE_URL }}
+          BUCKET: ${{ vars.R2_BUCKET }}
         run: |
           test -n "$KV_ID" || { echo "KV_NAMESPACE_ID is not set. Run this workflow once with the create box ticked."; exit 1; }
-          test -n "$ADMIN" || { echo "ADMIN_EMAIL is not set. It is the one Google account allowed to publish."; exit 1; }
-          sed -e "s|replace-with-kv-id|$KV_ID|" -e "s|you@example.com|$ADMIN|" wrangler.toml.example > wrangler.toml
-          [ -n "$SITE" ] && sed -i "s|^PUBLIC_SITE_URL = .*|PUBLIC_SITE_URL = \"$SITE\"|" wrangler.toml
+          sed -e "s|replace-with-kv-id|$KV_ID|" wrangler.toml.example > wrangler.toml
+          [ -n "$SITE" ] && sed -i "s|^SITE_URL = .*|SITE_URL = \"$SITE\"|" wrangler.toml
+          [ -n "$BUCKET" ] && sed -i "s|^bucket_name = .*|bucket_name = \"$BUCKET\"|" wrangler.toml
           grep -v '^#' wrangler.toml
 
       - name: deploy
@@ -53,13 +56,12 @@ jobs:
         env:
           ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          FEED: ${{ secrets.FEED_TOKEN }}
         run: |
-          for pair in "GOOGLE_CLIENT_ID:ID" "GOOGLE_CLIENT_SECRET:SECRET" "GITHUB_TOKEN:FEED"; do
+          for pair in "GOOGLE_CLIENT_ID:ID" "GOOGLE_CLIENT_SECRET:SECRET"; do
             name=${pair%%:*}
             from=${pair##*:}
             value=$(printenv "$from" || true)
             if [ -z "$value" ]; then echo "::error::repository secret for $name is empty"; exit 1; fi
             printf '%s' "$value" | npx wrangler secret put "$name"
           done
-          echo "Deployed. Add the worker's /oauth address to the Google OAuth client's authorized redirect URIs, then open the worker and sign in."
+          echo "Deployed. Add the worker's /oauth address to the Google OAuth client, and put the worker address in the api field of data/site.json."

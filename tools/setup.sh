@@ -9,11 +9,8 @@
 
 set -euo pipefail
 
-ADMIN_EMAIL=${ADMIN_EMAIL:-}
-OWNER=${OWNER:-saptarshihalder}
-REPO=${REPO:-classroom-login}
-BRANCH=${BRANCH:-main}
 SITE_URL=${SITE_URL:-https://saptarshihalder.github.io/classroom-login/}
+BUCKET=${BUCKET:-course-board-files}
 
 step(){ printf '\n\033[36m-- %s\033[0m\n' "$1"; }
 fail(){ printf '\n\033[31m%s\033[0m\n' "$1" >&2; exit 1; }
@@ -48,13 +45,9 @@ else
   echo 'Already signed in.'
 fi
 
-if [ -z "$ADMIN_EMAIL" ]; then
-  read -r -p 'Google account allowed to publish: ' ADMIN_EMAIL < /dev/tty
-fi
-[ -n "$ADMIN_EMAIL" ] || fail 'That account is needed, it is the only one the dashboard will let in.'
-
-step 'Creating the state store'
-printf 'name = "course-board-sync"\nmain = "src/index.js"\ncompatibility_date = "2026-08-20"\n' > wrangler.toml
+step 'Creating the state store and the file bucket'
+printf 'name = "course-boards"\nmain = "src/index.js"\ncompatibility_date = "2026-08-20"\n' > wrangler.toml
+npx wrangler r2 bucket create "$BUCKET" 2>&1 | grep -v 'already exists' || true
 made=$(npx wrangler kv namespace create STATE 2>&1) || fail "$made"
 printf '%s\n' "$made"
 kv=$(printf '%s' "$made" | grep -oE '[0-9a-f]{32}' | head -1 || true)
@@ -65,11 +58,8 @@ printf '%s' "$kv" | grep -qE '^[0-9a-f]{32}$' || fail "That does not look like a
 
 step 'Writing the settings'
 sed -e "s|replace-with-kv-id|$kv|" \
-    -e "s|you@example.com|$ADMIN_EMAIL|" \
-    -e "s|^GITHUB_OWNER = .*|GITHUB_OWNER = \"$OWNER\"|" \
-    -e "s|^GITHUB_REPO = .*|GITHUB_REPO = \"$REPO\"|" \
-    -e "s|^GITHUB_BRANCH = .*|GITHUB_BRANCH = \"$BRANCH\"|" \
-    -e "s|^PUBLIC_SITE_URL = .*|PUBLIC_SITE_URL = \"$SITE_URL\"|" \
+    -e "s|^SITE_URL = .*|SITE_URL = \"$SITE_URL\"|" \
+    -e "s|^bucket_name = .*|bucket_name = \"$BUCKET\"|" \
     wrangler.toml.example > wrangler.toml
 grep -v '^#' wrangler.toml
 
@@ -82,22 +72,32 @@ step 'Credentials'
 echo 'Typed in here, stored with Cloudflare, never saved to this computer.'
 put_secret GOOGLE_CLIENT_ID     "$(ask_secret 'Google client ID')"
 put_secret GOOGLE_CLIENT_SECRET "$(ask_secret 'Google client secret')"
-put_secret GITHUB_TOKEN         "$(ask_secret 'GitHub token that may update this repository')"
+
+if [ -n "$url" ]; then
+  step 'Pointing the site at the workspace'
+  node -e "const f='../data/site.json',fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.api=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n')" "$url"
+fi
 
 printf '\n\033[32mThe workspace is up.\033[0m\n'
 if [ -n "$url" ]; then
   cat <<TXT
 
   workspace   $url
-  board       $SITE_URL
+  site        $SITE_URL
 
-One thing left, in the browser: open the Google OAuth client and add this exact
-address under Authorized redirect URIs.
+Two things left.
 
-  $url/oauth
+1. In the browser, open the Google OAuth client and add this exact address
+   under Authorized redirect URIs:
 
-Then open the workspace on your phone, sign in, pick the course, sync, and
-publish. The sign-in button on the board starts working by itself.
+     $url/oauth
+
+2. data/site.json has been pointed at the workspace. Commit and push it so
+   the site knows where to look:
+
+     git add data/site.json && git commit -m "point the site at the workspace" && git push
+
+Then anyone enrolled can open the workspace, sign in, and put their course up.
 TXT
 else
   echo 'Could not read the address back. Find it in the Cloudflare dashboard under'

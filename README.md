@@ -1,49 +1,64 @@
-# PDE board
+# Course boards
 
-A public, read-only copy of a Google Classroom course: announcements, notes and
-the attachments themselves, at one link anyone can open.
+Somewhere to put a course's announcements and notes so people outside the class
+can read them. Anyone enrolled in a course can sign in, pick it, choose what
+should be public, and hand out one link.
 
-The board is a static site. It reads `data/feed.json` and the files committed
-under `files/`, so no Google credentials, session cookies or repository token
-ever reach a visitor's browser.
+Readers never sign in. They get a directory of courses and a board per course
+with the stream, the classwork grouped by topic, and every shared file.
 
-Everything that talks to Google lives in `worker/`. It signs one account in,
-reads the course, keeps the full sync in private Cloudflare KV, and publishes
-only what has been selected: the feed, and a copy of each attachment.
+## how it is put together
 
-## the board
+Two halves, deployed separately:
 
-Three views, matching the shape of the course:
+- the **site** is static and lives on GitHub Pages: a directory (`index.html`),
+  a board (`board.html?c=<course>`) and a sign-in page
+- the **workspace** is a Cloudflare Worker: it holds the Google sign-ins, syncs
+  each connected course, serves the public API, and stores copied attachments in
+  R2
 
-- **Stream** — announcements and material newest first, the way the class sees them
-- **Classwork** — material grouped by the course's own topics
-- **Files** — every published handout, with an inline viewer for PDFs and images
+The site knows where the workspace is from one field, `api`, in
+`data/site.json`. Nothing else is wired between them, and no credential ever
+reaches a reader's browser.
 
-Each file also has its own link (`#file=files/...`), so one set of notes can be
-shared on its own without sending someone the whole board.
+```
+reader ──▶ Pages (directory, board)
+              │  fetch /api/board/<course>, /f/<course>/…
+              ▼
+          Worker ──▶ KV (who published what)
+              │  └──▶ R2 (the copied files)
+              └──▶ Google Classroom + Drive, as the account that connected it
+```
 
-Run it locally with:
+## who can publish what
+
+A board belongs to the course, not to a person. Whoever connects a course first
+creates its board; anyone else enrolled who connects the same course joins as
+another publisher of the same board rather than making a second one.
+
+Publishers choose post by post what readers see. A board stays invisible until
+it is explicitly put up, taking it down hides it at once, and deleting it also
+removes every file copied for it.
+
+Only publish material you are allowed to pass on. Course handouts are often
+someone else's copyright, and choosing post by post is what keeps that a
+decision rather than an accident.
+
+## running the site
 
 ```bash
 python -m http.server 8000
 ```
 
-Then open `http://localhost:8000`.
+Deployment is `.github/workflows/pages.yml`; in **Settings → Pages** set the
+source to **GitHub Actions**.
 
-Deployment is `.github/workflows/pages.yml`. In **Settings → Pages**, set the
-source to **GitHub Actions**. The published address is:
-
-`https://saptarshihalder.github.io/classroom-login/`
-
-## the sync workspace
-
-`worker/` is a Cloudflare Worker. It serves the sign-in and publishing screens,
-and runs a scheduled sync every ten minutes.
+## running the workspace
 
 ### 1. Google Cloud
 
-Create a Google Cloud project, enable the **Google Classroom API** and the
-**Google Drive API**, then configure an OAuth consent screen with these scopes:
+Create a project, enable the **Google Classroom API** and the **Google Drive
+API**, then configure an OAuth consent screen asking for:
 
 ```text
 openid
@@ -57,21 +72,16 @@ https://www.googleapis.com/auth/classroom.rosters.readonly
 https://www.googleapis.com/auth/drive.readonly
 ```
 
-Create an OAuth **Web application** client. Once the worker is deployed, add its
-`/oauth` address as an authorized redirect URI:
+Create an OAuth **Web application** client and keep the id and secret.
 
-```text
-https://YOUR-WORKER.workers.dev/oauth
-```
-
-A mismatch here is the most common setup failure.
-
-`drive.readonly` is one of Google's restricted scopes, which has a practical
-consequence: while the OAuth app sits in **Testing**, refresh authorization
-expires after seven days and the scheduled sync stops until you sign in again.
-The dashboard says so when it happens. For a sync that keeps running, move the
-app to production, or publish it as an internal app if the account belongs to a
-Workspace organisation.
+**How many people can publish.** While the OAuth app is unverified, Google
+allows up to 100 accounts, each added as a test user, and their sign-in has to
+be renewed every seven days. That is the mode this is built for. Two ways past
+it: if the app is owned by a Google Workspace organisation, marking it
+**Internal** removes both the cap and the renewal for that organisation's
+accounts; going fully public means Google verification, and because
+`drive.readonly` is a restricted scope, a paid third-party security assessment.
+Readers are never affected by any of this.
 
 ### 2. Cloudflare
 
@@ -88,139 +98,51 @@ bash tools/setup.sh
 ```
 
 It installs what the worker needs, signs in to Cloudflare in the browser,
-creates the state store, writes `wrangler.toml`, deploys, and asks for the three
-credentials, which are typed in and stored with Cloudflare rather than written
-to disk. It finishes by printing the exact `/oauth` address to paste into the
-Google OAuth client.
+creates the KV namespace and the R2 bucket, writes `wrangler.toml`, deploys,
+takes the two Google credentials on the prompt, and points `data/site.json` at
+the deployed address. Commit that file and the site starts talking to the
+workspace.
 
-The parts of step 1 the script cannot do are the parts Google only exposes in a
-browser: creating the project, the consent screen and the OAuth client, and
-adding the redirect URI to it afterwards.
+Without a terminal, the same thing runs from the Actions tab: add
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `GOOGLE_CLIENT_ID` and
+`GOOGLE_CLIENT_SECRET` as repository secrets, then run the **workspace**
+workflow once with *create the state store* ticked and once without.
 
-#### without a terminal at all
-
-The worker can also be deployed from the Actions tab, which matters if the phone
-is the only thing to hand.
-
-In **Settings → Secrets and variables → Actions**, add these repository
-**secrets**:
-
-| secret | what it is |
-| --- | --- |
-| `CLOUDFLARE_API_TOKEN` | a Cloudflare token with *Edit Cloudflare Workers* |
-| `CLOUDFLARE_ACCOUNT_ID` | from the Cloudflare dashboard sidebar |
-| `GOOGLE_CLIENT_ID` | from the OAuth client above |
-| `GOOGLE_CLIENT_SECRET` | from the OAuth client above |
-| `FEED_TOKEN` | a token that may update contents of this repository |
-
-and these repository **variables**:
-
-| variable | what it is |
-| --- | --- |
-| `ADMIN_EMAIL` | the one Google account allowed to publish |
-| `KV_NAMESPACE_ID` | filled in after the first run below |
-| `PUBLIC_SITE_URL` | optional, the board's address |
-
-`FEED_TOKEN` is the repository token the worker commits with. It is not called
-`GITHUB_TOKEN` because GitHub reserves that prefix for its own secrets; the
-workflow stores it under that name inside the worker.
-
-Then run the **workspace** workflow from the Actions tab twice:
-
-1. with **create the state store** ticked — this makes the KV namespace and
-   prints its id, which goes into the `KV_NAMESPACE_ID` variable
-2. with the box left unticked — this deploys the worker and stores the
-   credentials
-
-Or step through it by hand:
-
-```bash
-cd worker
-npm install
-cp wrangler.toml.example wrangler.toml
-npx wrangler kv namespace create STATE     # put the id in wrangler.toml
-npx wrangler secret put GOOGLE_CLIENT_ID
-npx wrangler secret put GOOGLE_CLIENT_SECRET
-npx wrangler secret put GITHUB_TOKEN
-npx wrangler deploy
-```
-
-Either way, finish by adding the deployed worker's `/oauth` address to the
-Google OAuth client's authorized redirect URIs.
-
-### 3. Publishing
-
-Open the worker address on your phone, sign in, pick the course, and press
-**sync now**. Nothing is public yet: select the posts you want and press
-**publish selected**, or turn **auto-publish** on to have every new post go
-straight to the board. After the first sign-in the worker writes its own
-address into `data/site.json`, which is what wires up the sign-in button on the
-public site.
+Either way, finish by adding the workspace's `/oauth` address to the Google
+OAuth client's authorized redirect URIs. A mismatch there is the usual failure.
 
 ## attachments
 
-Published attachments are copied into `files/` in this repository and served
-from the same site as the board:
+When a post is published, its Drive attachments are copied into R2 and served
+from the workspace:
 
 - ordinary Drive files are copied as they are
 - Docs, Slides, Sheets and Drawings are exported to PDF
-- links, forms and videos stay as links to their original home
-- anything above `MAX_FILE_MB` (20 by default) is left out and reported in the dashboard
+- links, forms and videos stay as links to where they already live
+- anything above `MAX_FILE_MB` (20) is left out and reported on the board
+- a course may use `COURSE_LIMIT_MB` (300) in total
 
-Attachments are fetched a few per run so a sync stays inside a scheduled run's
-budget; the board marks the rest as still being copied and the next run picks
-them up. Removing a post from the board deletes its files from the repository
-too, unless another published post still uses them.
+Copies happen a few per run, so a board shows the rest as still being copied
+until the next scheduled run catches up. The scheduled run works through the
+accounts `ACCOUNTS_PER_RUN` at a time, so one busy course cannot starve the
+others.
 
-Only publish material you are allowed to pass on. Course handouts are often
-someone else's copyright, and the point of the selection step is that you decide
-file by file rather than mirroring a course wholesale by accident.
+## the API
 
-## feed format
+Two public endpoints, both open to any origin:
 
-The worker writes `data/feed.json`:
-
-```json
-{
-  "course": {
-    "name": "Partial Differential Equations",
-    "short": "PDE",
-    "section": "MA 4021",
-    "room": "LT-4",
-    "about": "Announcements and shared course material",
-    "teachers": ["R. Mukherjee"]
-  },
-  "updated": "2026-08-24T03:00:00.000Z",
-  "items": [
-    {
-      "id": "material:123",
-      "kind": "material",
-      "title": "Problem set 2",
-      "text": "Attempt every question before Friday.",
-      "author": "R. Mukherjee",
-      "topic": "Week 3",
-      "created": "2026-08-24T01:15:00.000Z",
-      "links": [],
-      "files": [
-        {"name": "Problem set 2.pdf", "path": "files/problem-set-2-d4e5f6.pdf", "size": 184320, "type": "pdf"}
-      ],
-      "pending": 0,
-      "blocked": 0
-    }
-  ]
-}
-```
-
-`kind` is `post` for an announcement or `material` for classwork material.
-`pending` counts attachments still being copied, `blocked` counts the ones that
-could not be.
+| route | gives |
+| --- | --- |
+| `GET /api/directory` | every board that is up |
+| `GET /api/board/<course>` | one board: course, posts, files |
+| `GET /f/<course>/<id>/<name>` | one copied file, with range requests |
 
 ## checks
 
 ```bash
-node tools/verify.mjs      # feed shape, file paths, page references
-cd worker && npm test      # sync and feed-building tests
+node tools/verify.mjs      # required files, site config, page references
+cd worker && npm test      # slugs, board building, deletion, the directory
 ```
 
-CI runs both on every push, along with a syntax pass and a scan for committed
+CI runs both on every push, with a syntax pass and a scan for committed
 credentials.
