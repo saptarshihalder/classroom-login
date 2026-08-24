@@ -1,6 +1,6 @@
 import {num,safe,slug as toSlug} from './util.js'
 import * as db from './store.js'
-import {classroom,listAll,driveMeta,driveBody} from './google.js'
+import {classroom,listAll,driveMeta} from './google.js'
 
 const EXPORT={
   'application/vnd.google-apps.document':'application/pdf',
@@ -118,8 +118,7 @@ export async function mirror(e,slug,acct,budget){
   if(!rec)return {done:0,left:0}
   let want=await queue(e,slug)
   let cap=num(e.MAX_FILE_MB,20)*1048576
-  let room=num(e.COURSE_LIMIT_MB,300)*1048576
-  let used=rec.bytes||0,done=0
+  let done=0
 
   for(let [fid,d] of want){
     if(done>=budget)break
@@ -133,20 +132,13 @@ export async function mirror(e,slug,acct,budget){
         throw Error('this Google file type cannot be exported')
       if(!native&&num(meta.size,0)>cap)
         throw Error(`larger than ${Math.round(cap/1048576)} MB`)
-      if(used>=room)
-        throw Error('this course has used all its space')
-
-      let body=new Uint8Array(await(await driveBody(e,acct,fid,native)).arrayBuffer())
-      if(body.length>cap)throw Error(`larger than ${Math.round(cap/1048576)} MB`)
 
       let base=(meta.name||'file').replace(/\.[^.]{1,5}$/,'')
       let ext=EXT[mime]||((meta.name||'').includes('.')?meta.name.split('.').pop().toLowerCase().slice(0,5):'bin')
-      let key=`${slug}/${fid}/${toSlug(base,'file')}.${ext}`
-      await e.FILES.put(key,body,{httpMetadata:{contentType:mime,cacheControl:'public, max-age=31536000, immutable'}})
-      used+=body.length
+      let path=`f/${slug}/${fid}/${toSlug(base,'file')}.${ext}`
       await db.saveFile(e,slug,fid,{
         status:'ok',name:native&&!/\.pdf$/i.test(meta.name||'')?`${base}.pdf`:meta.name||`${base}.${ext}`,
-        key,path:`f/${key}`,type:kindOf(mime,meta.name||''),size:body.length,at:new Date().toISOString()
+        path,type:kindOf(mime,meta.name||''),size:num(meta.size,0),mime,exportAs:native||'',at:new Date().toISOString()
       })
     }catch(err){
       await db.saveFile(e,slug,fid,{status:'held',reason:err.message,name:d.name||'course file'},{expirationTtl:60*60*6})
@@ -155,7 +147,7 @@ export async function mirror(e,slug,acct,budget){
 
   let left=0
   for(let fid of want.keys())if(!await db.fileRec(e,slug,fid))left++
-  if(used!==(rec.bytes||0))await db.saveCourse(e,{...await db.course(e,slug),bytes:used})
+  if(rec.bytes)await db.saveCourse(e,{...await db.course(e,slug),bytes:0})
   return {done,left}
 }
 

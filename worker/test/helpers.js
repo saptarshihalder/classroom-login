@@ -1,4 +1,4 @@
-/* Just enough KV and R2 to run the worker's logic off Cloudflare. */
+/* Just enough KV to run the worker's logic off Cloudflare. */
 export function fakeKV(seed={}){
   let m=new Map(Object.entries(seed))
   return {
@@ -13,14 +13,4 @@ export function fakeKV(seed={}){
   }
 }
 
-export function fakeR2(){
-  let m=new Map()
-  return {
-    dump:()=>m,
-    put:async(k,body,opts)=>void m.set(k,{body,opts}),
-    get:async k=>m.get(k)||null,
-    delete:async k=>void m.delete(k)
-  }
-}
-
-export const env=(kv,r2)=>({STATE:kv,FILES:r2||fakeR2()})
+export const env=kv=>({STATE:kv})

@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       create_state:
-        description: Create the state store and file bucket instead of deploying. Run this once, first.
+        description: Create the state store instead of deploying. Run this once, first.
         type: boolean
         default: false
 permissions:
@@ -24,13 +24,10 @@ jobs:
           node-version: 22
       - run: npm install
 
-      - name: create the state store and file bucket
+      - name: create the state store
         if: inputs.create_state
-        env:
-          BUCKET: ${{ vars.R2_BUCKET }}
         run: |
           printf 'name = "course-boards"\nmain = "src/index.js"\ncompatibility_date = "2026-08-20"\n' > wrangler.toml
-          npx wrangler r2 bucket create "${BUCKET:-course-board-files}" 2>&1 | grep -v 'already exists' || true
           npx wrangler kv namespace create STATE
           echo "Put the id printed above into the KV_NAMESPACE_ID repository variable, then run this workflow again with the box left unticked."
 
@@ -39,12 +36,10 @@ jobs:
         env:
           KV_ID: ${{ vars.KV_NAMESPACE_ID }}
           SITE: ${{ vars.SITE_URL }}
-          BUCKET: ${{ vars.R2_BUCKET }}
         run: |
           test -n "$KV_ID" || { echo "KV_NAMESPACE_ID is not set. Run this workflow once with the create box ticked."; exit 1; }
           sed -e "s|replace-with-kv-id|$KV_ID|" wrangler.toml.example > wrangler.toml
           [ -n "$SITE" ] && sed -i "s|^SITE_URL = .*|SITE_URL = \"$SITE\"|" wrangler.toml
-          [ -n "$BUCKET" ] && sed -i "s|^bucket_name = .*|bucket_name = \"$BUCKET\"|" wrangler.toml
           grep -v '^#' wrangler.toml
 
       - name: deploy

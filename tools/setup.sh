@@ -10,7 +10,6 @@
 set -euo pipefail
 
 SITE_URL=${SITE_URL:-https://saptarshihalder.github.io/classroom-login/}
-BUCKET=${BUCKET:-course-board-files}
 
 step(){ printf '\n\033[36m-- %s\033[0m\n' "$1"; }
 fail(){ printf '\n\033[31m%s\033[0m\n' "$1" >&2; exit 1; }
@@ -45,9 +44,8 @@ else
   echo 'Already signed in.'
 fi
 
-step 'Creating the state store and the file bucket'
+step 'Creating the state store'
 printf 'name = "course-boards"\nmain = "src/index.js"\ncompatibility_date = "2026-08-20"\n' > wrangler.toml
-npx wrangler r2 bucket create "$BUCKET" 2>&1 | grep -v 'already exists' || true
 made=$(npx wrangler kv namespace create STATE 2>&1) || fail "$made"
 printf '%s\n' "$made"
 kv=$(printf '%s' "$made" | grep -oE '[0-9a-f]{32}' | head -1 || true)
@@ -59,7 +57,6 @@ printf '%s' "$kv" | grep -qE '^[0-9a-f]{32}$' || fail "That does not look like a
 step 'Writing the settings'
 sed -e "s|replace-with-kv-id|$kv|" \
     -e "s|^SITE_URL = .*|SITE_URL = \"$SITE_URL\"|" \
-    -e "s|^bucket_name = .*|bucket_name = \"$BUCKET\"|" \
     wrangler.toml.example > wrangler.toml
 grep -v '^#' wrangler.toml
 

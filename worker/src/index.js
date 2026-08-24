@@ -30,19 +30,25 @@ async function ownedBy(e,acct,slug){
 }
 
 async function serveFile(r,e,key){
-  let obj=await e.FILES.get(key,{range:r.headers})
-  if(!obj)return gone('not found',404)
-  let h=new Headers(open)
-  obj.writeHttpMetadata(h)
-  h.set('etag',obj.httpEtag)
-  h.set('accept-ranges','bytes')
-  h.set('cache-control','public, max-age=31536000, immutable')
-  let status=200
-  if(obj.range&&obj.range.length!==undefined&&obj.range.length<obj.size){
-    status=206
-    h.set('content-range',`bytes ${obj.range.offset}-${obj.range.offset+obj.range.length-1}/${obj.size}`)
+  let [slug,fid]=key.split('/')
+  let course=await db.course(e,slug),file=await db.fileRec(e,slug,fid)
+  if(!course?.live||file?.status!=='ok')return gone('not found',404)
+
+  /* Stream from Drive as one of the connected publishers. This keeps the
+     service on Cloudflare's free tier: no paid object-storage subscription. */
+  for(let sub of course.publishers||[]){
+    let acct=await db.account(e,sub)
+    if(!acct?.refresh)continue
+    try{
+      let source=await g.driveBody(e,acct,fid,file.exportAs||'')
+      let h=new Headers(open)
+      h.set('content-type',file.mime||source.headers.get('content-type')||'application/octet-stream')
+      h.set('cache-control','public, max-age=300')
+      h.set('content-disposition',`inline; filename*=UTF-8''${encodeURIComponent(file.name||'course-file')}`)
+      return new Response(r.method==='HEAD'?null:source.body,{status:200,headers:h})
+    }catch{}
   }
-  return new Response(obj.body,{status,headers:h})
+  return gone('file is temporarily unavailable',503)
 }
 
 async function dashboard(e,acct,message=''){
@@ -143,7 +149,7 @@ async function route(r,e){
   if(path==='/files'){
     let got=await sync.mirror(e,slug,acct,num(e.MIRROR_BATCH,6)*2)
     await sync.settle(e,slug)
-    return managePage(e,acct,slug,got.left?`Fetched ${got.done}. ${got.left} still queued.`:'Attachments are up to date.')
+    return managePage(e,acct,slug,got.left?`Prepared ${got.done}. ${got.left} still queued.`:'Attachments are ready.')
   }
   if(path==='/live'){
     await db.saveCourse(e,{...course,live:!course.live})

@@ -7,11 +7,11 @@
   items:<slug>      everything synced for that course, public or not
   pub:<slug>        the item ids chosen for the public board
   cid:<courseId>    which slug a Classroom course already became
-  file:<slug>:<id>  one mirrored attachment
+  file:<slug>:<id>  metadata for one linked Drive attachment
   dir               the public directory, rebuilt whenever a board changes
   turn              how far the last scheduled run got through the accounts
 
-  Attachment bytes live in R2 under <slug>/<driveId>/<name>, never in KV.
+  Attachment bytes stay in Google Drive and are streamed when requested.
 */
 import {slug as toSlug} from './util.js'
 
@@ -69,8 +69,6 @@ export async function forget(e,slug){
   let c=await course(e,slug)
   let list=await e.STATE.list({prefix:`file:${slug}:`})
   for(let k of list.keys){
-    let rec=await e.STATE.get(k.name,'json')
-    if(rec?.key)await e.FILES.delete(rec.key)
     await e.STATE.delete(k.name)
   }
   await e.STATE.delete(`items:${slug}`)

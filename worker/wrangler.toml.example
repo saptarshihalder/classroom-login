@@ -7,11 +7,9 @@ compatibility_date = "2026-08-20"
 SITE_URL = "https://saptarshihalder.github.io/classroom-login/"
 # optional: only let one organisation's accounts publish, e.g. "university.edu"
 # ALLOWED_DOMAIN = ""
-# largest single attachment copied, in megabytes
+# largest ordinary Drive attachment published, in megabytes
 MAX_FILE_MB = "20"
-# how much space one course may use, in megabytes
-COURSE_LIMIT_MB = "300"
-# attachments fetched per run
+# attachments prepared per run
 MIRROR_BATCH = "6"
 # accounts refreshed per scheduled run
 ACCOUNTS_PER_RUN = "3"
@@ -19,10 +17,6 @@ ACCOUNTS_PER_RUN = "3"
 [[kv_namespaces]]
 binding = "STATE"
 id = "replace-with-kv-id"
-
-[[r2_buckets]]
-binding = "FILES"
-bucket_name = "course-board-files"
 
 [triggers]
 crons = ["*/10 * * * *"]

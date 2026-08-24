@@ -14,8 +14,8 @@ Two halves, deployed separately:
 - the **site** is static and lives on GitHub Pages: a directory (`index.html`),
   a board (`board.html?c=<course>`) and a sign-in page
 - the **workspace** is a Cloudflare Worker: it holds the Google sign-ins, syncs
-  each connected course, serves the public API, and stores copied attachments in
-  R2
+  each connected course, serves the public API, and streams published
+  attachments from Google Drive when a reader opens one
 
 The site knows where the workspace is from one field, `api`, in
 `data/site.json`. Nothing else is wired between them, and no credential ever
@@ -26,7 +26,6 @@ reader ──▶ Pages (directory, board)
               │  fetch /api/board/<course>, /f/<course>/…
               ▼
           Worker ──▶ KV (who published what)
-              │  └──▶ R2 (the copied files)
               └──▶ Google Classroom + Drive, as the account that connected it
 ```
 
@@ -37,8 +36,7 @@ creates its board; anyone else enrolled who connects the same course joins as
 another publisher of the same board rather than making a second one.
 
 Publishers choose post by post what readers see. A board stays invisible until
-it is explicitly put up, taking it down hides it at once, and deleting it also
-removes every file copied for it.
+it is explicitly put up, and taking it down hides it at once.
 
 Only publish material you are allowed to pass on. Course handouts are often
 someone else's copyright, and choosing post by post is what keeps that a
@@ -98,7 +96,7 @@ bash tools/setup.sh
 ```
 
 It installs what the worker needs, signs in to Cloudflare in the browser,
-creates the KV namespace and the R2 bucket, writes `wrangler.toml`, deploys,
+creates the KV namespace, writes `wrangler.toml`, deploys,
 takes the two Google credentials on the prompt, and points `data/site.json` at
 the deployed address. Commit that file and the site starts talking to the
 workspace.
@@ -113,16 +111,16 @@ OAuth client's authorized redirect URIs. A mismatch there is the usual failure.
 
 ## attachments
 
-When a post is published, its Drive attachments are copied into R2 and served
-from the workspace:
+When a post is published, its Drive attachment metadata is prepared. Opening a
+file streams it from Drive through the workspace, so no paid Cloudflare R2
+subscription is needed:
 
-- ordinary Drive files are copied as they are
-- Docs, Slides, Sheets and Drawings are exported to PDF
+- ordinary Drive files are streamed as they are
+- Docs, Slides, Sheets and Drawings are streamed as PDF exports
 - links, forms and videos stay as links to where they already live
 - anything above `MAX_FILE_MB` (20) is left out and reported on the board
-- a course may use `COURSE_LIMIT_MB` (300) in total
 
-Copies happen a few per run, so a board shows the rest as still being copied
+Files are prepared a few per run, so a board shows the rest as still pending
 until the next scheduled run catches up. The scheduled run works through the
 accounts `ACCOUNTS_PER_RUN` at a time, so one busy course cannot starve the
 others.
@@ -135,7 +133,7 @@ Two public endpoints, both open to any origin:
 | --- | --- |
 | `GET /api/directory` | every board that is up |
 | `GET /api/board/<course>` | one board: course, posts, files |
-| `GET /f/<course>/<id>/<name>` | one copied file, with range requests |
+| `GET /f/<course>/<id>/<name>` | one published Drive file, streamed on demand |
 
 ## checks
 

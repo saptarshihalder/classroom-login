@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {fakeKV,fakeR2,env} from './helpers.js'
+import {fakeKV,env} from './helpers.js'
 import {slug} from '../src/util.js'
 import * as db from '../src/store.js'
 import {kindOf,materials,toItem,board,settle} from '../src/sync.js'
@@ -38,7 +38,7 @@ test('one classroom course keeps one slug, and clashes get a suffix', async () =
   assert.equal(await db.slugFor(e,'C2','Partial Differential Equations'),'partial-differential-equations-2')
 })
 
-test('a board shows only published posts, and only mirrored files', async () => {
+test('a board shows only published posts, and only prepared files', async () => {
   let e=env(fakeKV())
   await db.saveCourse(e,{slug:'pde',courseId:'C1',name:'Partial Differential Equations',short:'PDE',
     publishers:['u1'],live:true,teachers:['R. Mukherjee'],topics:[{id:'t1',name:'Week 1'}]})
@@ -79,19 +79,18 @@ test('the directory lists only boards that are up, newest first', async () => {
   assert.deepEqual(dir.map(x=>x.slug),['c','a'])
 })
 
-test('deleting a board clears its files, items and course lookup', async () => {
-  let kv=fakeKV(),r2=fakeR2(),e=env(kv,r2)
+test('deleting a board clears its file metadata, items and course lookup', async () => {
+  let kv=fakeKV(),e=env(kv)
   await db.saveCourse(e,{slug:'pde',courseId:'C1',name:'PDE',publishers:['u1'],live:true})
   await db.claim(e,'u1','pde')
   await db.saveItems(e,'pde',[{id:'a:1',kind:'post',title:'',text:'x',created:'2026-08-01T00:00:00Z',links:[],drive:[]}])
   await db.savePublished(e,'pde',new Set(['a:1']))
-  await db.saveFile(e,'pde','f1',{status:'ok',name:'a.pdf',key:'pde/f1/a.pdf',path:'f/pde/f1/a.pdf',size:1,type:'pdf'})
-  await r2.put('pde/f1/a.pdf',new Uint8Array([1]))
+  await db.saveFile(e,'pde','f1',{status:'ok',name:'a.pdf',path:'f/pde/f1/a.pdf',size:1,type:'pdf'})
 
   await db.forget(e,'pde')
   assert.equal(await db.course(e,'pde'),null)
   assert.equal(await kv.get('cid:C1'),null,'the classroom id must be free to reconnect')
-  assert.equal(await r2.get('pde/f1/a.pdf'),null,'copied files must go too')
+  assert.equal(await db.fileRec(e,'pde','f1'),null,'linked file metadata must go too')
   assert.deepEqual(await db.mine(e,'u1'),[])
   assert.deepEqual(await db.items(e,'pde'),[])
 })

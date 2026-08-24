@@ -1,4 +1,4 @@
-import {esc,bytes} from './util.js'
+import {esc} from './util.js'
 
 const headers={'content-type':'text/html; charset=utf-8','cache-control':'no-store','x-frame-options':'DENY','referrer-policy':'no-referrer'}
 
@@ -24,7 +24,7 @@ export const landing=site=>shell('Share your course',
 const row=(c,site)=>`<div class="board">
   <div class="bmeta">
     <div class="topline"><span class="pill${c.live?' live':''}">${c.live?'public':'private'}</span><b>${esc(c.name)}</b></div>
-    <div class="small">${c.posts||0} post${c.posts===1?'':'s'} · ${c.files||0} file${c.files===1?'':'s'} · ${esc(bytes(c.bytes||0))} used</div>
+    <div class="small">${c.posts||0} post${c.posts===1?'':'s'} · ${c.files||0} file${c.files===1?'':'s'}</div>
   </div>
   <div class="bacts">
     ${c.live&&site?`<a class="btn ghost tiny" href="${esc(site)}board.html?c=${encodeURIComponent(c.slug)}" target="_blank" rel="noreferrer">view</a>`:''}
@@ -68,16 +68,15 @@ ${message?`<div class="note">${esc(message)}</div>`:''}
 ${course.live&&site?`<p class="small">Anyone can read it at <a href="${esc(site)}board.html?c=${encodeURIComponent(course.slug)}">${esc(site)}board.html?c=${esc(course.slug)}</a></p>`:'<p class="small">Choose what to show, then turn the board on.</p>'}
 <div class="acts">
 <form method="post" action="/sync"><input type="hidden" name="slug" value="${esc(course.slug)}"><button class="ghost">sync now</button></form>
-<form method="post" action="/files"><input type="hidden" name="slug" value="${esc(course.slug)}"><button class="ghost">fetch attachments</button></form>
+<form method="post" action="/files"><input type="hidden" name="slug" value="${esc(course.slug)}"><button class="ghost">prepare attachments</button></form>
 <form method="post" action="/live"><input type="hidden" name="slug" value="${esc(course.slug)}"><button>${course.live?'take the board down':'put the board up'}</button></form>
 </div>
 <div class="stats">
 <div class="stat"><b>${items.length}</b><span>synced</span></div>
 <div class="stat"><b>${chosen.size}</b><span>on the board</span></div>
-<div class="stat"><b>${course.files||0}</b><span>files hosted</span></div>
-<div class="stat"><b>${esc(bytes(course.bytes||0))}</b><span>space used</span></div>
+<div class="stat"><b>${course.files||0}</b><span>files linked</span></div>
 </div>
-${queued?`<p class="small">${queued} attachment${queued===1?'':'s'} still to fetch. Press fetch attachments again, or wait for the next scheduled run.</p>`:''}
+${queued?`<p class="small">${queued} attachment${queued===1?'':'s'} still to prepare. Press prepare attachments again, or wait for the next scheduled run.</p>`:''}
 </section>
 
 <section class="panel">
@@ -98,8 +97,8 @@ ${x.text&&x.title?`<p>${esc(x.text.slice(0,200))}</p>`:''}
 
 <section class="panel danger">
 <div class="eyebrow">leaving</div>
-<p class="small">Taking the board down hides it at once. Deleting also removes every copied file from storage and cannot be undone.</p>
-<form method="post" action="/remove" onsubmit="return confirm('Delete this board and every file copied for it?')">
+<p class="small">Taking the board down hides it at once. Deleting also removes its saved file links and cannot be undone.</p>
+<form method="post" action="/remove" onsubmit="return confirm('Delete this board and its saved file links?')">
 <input type="hidden" name="slug" value="${esc(course.slug)}">
 <button class="ghost warn">delete this board</button></form>
 </section>
@@ -136,7 +135,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .note{background:#eaf4ef;color:#285e49;border:1px solid #cfe3d9;border-radius:12px;padding:11px 13px;margin-bottom:16px;font-size:13px}
 .note.warn{background:#fdf1e7;color:#8a5624;border-color:#f0dcc6}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0 10px}
 .stat{border:1px solid #e8ebe9;border-radius:12px;padding:12px}
 .stat b{display:block;font-size:19px;letter-spacing:-.02em}
 .stat span{font-size:11px;color:#737975}

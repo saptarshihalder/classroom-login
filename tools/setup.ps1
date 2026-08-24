@@ -10,8 +10,7 @@
 #>
 [CmdletBinding()]
 param(
-  [string]$SiteUrl = 'https://saptarshihalder.github.io/classroom-login/',
-  [string]$Bucket  = 'course-board-files'
+  [string]$SiteUrl = 'https://saptarshihalder.github.io/classroom-login/'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,10 +56,9 @@ if($who -match 'not authenticated'){
   Write-Host 'Already signed in.'
 }
 
-Write-Step 'Creating the state store and the file bucket'
+Write-Step 'Creating the state store'
 "name = `"course-boards`"`nmain = `"src/index.js`"`ncompatibility_date = `"2026-08-20`"`n" |
   Set-Content -Path 'wrangler.toml' -Encoding ascii
-& npx wrangler r2 bucket create $Bucket 2>&1 | Where-Object { $_ -notmatch 'already exists' }
 $made = (& npx wrangler kv namespace create STATE 2>&1 | Out-String)
 Write-Host $made
 $kvId = ''
@@ -73,8 +71,7 @@ Write-Step 'Writing the settings'
 (Get-Content 'wrangler.toml.example') |
   ForEach-Object {
     $_ -replace 'replace-with-kv-id',$kvId `
-       -replace '^SITE_URL = .*',"SITE_URL = `"$SiteUrl`"" `
-       -replace '^bucket_name = .*',"bucket_name = `"$Bucket`""
+       -replace '^SITE_URL = .*',"SITE_URL = `"$SiteUrl`""
   } | Set-Content -Path 'wrangler.toml' -Encoding utf8
 Write-Host (Get-Content 'wrangler.toml' | Where-Object { $_ -notmatch '^#' } | Out-String)
 
