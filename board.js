@@ -60,8 +60,8 @@ function linkchip(l){
 function extras(x){
   let att=(x.files||[]).map(attach).join('')
   let links=(x.links||[]).filter(l=>okurl(l.url)).map(linkchip).join('')
-  let wait=x.pending?`<p class="wait">${x.pending} attachment${x.pending===1?'':'s'} still being copied across.</p>`:''
-  let held=x.blocked?`<p class="wait">${x.blocked} attachment${x.blocked===1?'':'s'} could not be copied here.</p>`:''
+  let wait=x.pending?`<p class="wait">${x.pending} attachment${x.pending===1?'':'s'} still being prepared.</p>`:''
+  let held=x.blocked?`<p class="wait">${x.blocked} attachment${x.blocked===1?'':'s'} could not be prepared.</p>`:''
   return `${att?`<div class="atts">${att}</div>`:''}${links?`<div class="links">${links}</div>`:''}${wait}${held}`
 }
 

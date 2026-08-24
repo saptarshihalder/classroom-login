@@ -160,7 +160,7 @@ async function route(r,e){
   if(path==='/remove'){
     await db.forget(e,slug)
     await db.rebuildDirectory(e)
-    return dashboard(e,acct,`Deleted ${course.name} and everything copied for it.`)
+    return dashboard(e,acct,`Deleted ${course.name} and its prepared file links.`)
   }
   if(path==='/publish'||path==='/unpublish'||path==='/publish-all'){
     let chosen=await db.published(e,slug)
