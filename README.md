@@ -75,29 +75,54 @@ Workspace organisation.
 
 ### 2. Cloudflare
 
+The worker can be deployed without a terminal, which matters if the phone is the
+only thing to hand.
+
+In **Settings → Secrets and variables → Actions**, add these repository
+**secrets**:
+
+| secret | what it is |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | a Cloudflare token with *Edit Cloudflare Workers* |
+| `CLOUDFLARE_ACCOUNT_ID` | from the Cloudflare dashboard sidebar |
+| `GOOGLE_CLIENT_ID` | from the OAuth client above |
+| `GOOGLE_CLIENT_SECRET` | from the OAuth client above |
+| `FEED_TOKEN` | a token that may update contents of this repository |
+
+and these repository **variables**:
+
+| variable | what it is |
+| --- | --- |
+| `ADMIN_EMAIL` | the one Google account allowed to publish |
+| `KV_NAMESPACE_ID` | filled in after the first run below |
+| `PUBLIC_SITE_URL` | optional, the board's address |
+
+`FEED_TOKEN` is the repository token the worker commits with. It is not called
+`GITHUB_TOKEN` because GitHub reserves that prefix for its own secrets; the
+workflow stores it under that name inside the worker.
+
+Then run the **workspace** workflow from the Actions tab twice:
+
+1. with **create the state store** ticked — this makes the KV namespace and
+   prints its id, which goes into the `KV_NAMESPACE_ID` variable
+2. with the box left unticked — this deploys the worker and stores the
+   credentials
+
+To do the same from a terminal instead:
+
 ```bash
 cd worker
 npm install
 cp wrangler.toml.example wrangler.toml
-npx wrangler kv namespace create STATE
-```
-
-Put the returned namespace id in `wrangler.toml` and set `ADMIN_EMAIL` to the
-one Google account allowed to publish.
-
-Secrets stay out of git:
-
-```bash
+npx wrangler kv namespace create STATE     # put the id in wrangler.toml
 npx wrangler secret put GOOGLE_CLIENT_ID
 npx wrangler secret put GOOGLE_CLIENT_SECRET
 npx wrangler secret put GITHUB_TOKEN
-```
-
-`GITHUB_TOKEN` only needs permission to update repository contents here.
-
-```bash
 npx wrangler deploy
 ```
+
+Either way, finish by adding the deployed worker's `/oauth` address to the
+Google OAuth client's authorized redirect URIs.
 
 ### 3. Publishing
 
