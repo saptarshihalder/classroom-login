@@ -10,11 +10,8 @@
 #>
 [CmdletBinding()]
 param(
-  [string]$AdminEmail,
-  [string]$Owner   = 'saptarshihalder',
-  [string]$Repo    = 'classroom-login',
-  [string]$Branch  = 'main',
-  [string]$SiteUrl = 'https://saptarshihalder.github.io/classroom-login/'
+  [string]$SiteUrl = 'https://saptarshihalder.github.io/classroom-login/',
+  [string]$Bucket  = 'course-board-files'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -60,12 +57,10 @@ if($who -match 'not authenticated'){
   Write-Host 'Already signed in.'
 }
 
-if(-not $AdminEmail){ $AdminEmail = (Read-Host 'Google account allowed to publish').Trim() }
-if(-not $AdminEmail){ Write-Fail 'That account is needed, it is the only one the dashboard will let in.' }
-
-Write-Step 'Creating the state store'
-"name = `"course-board-sync`"`nmain = `"src/index.js`"`ncompatibility_date = `"2026-08-20`"`n" |
+Write-Step 'Creating the state store and the file bucket'
+"name = `"course-boards`"`nmain = `"src/index.js`"`ncompatibility_date = `"2026-08-20`"`n" |
   Set-Content -Path 'wrangler.toml' -Encoding ascii
+& npx wrangler r2 bucket create $Bucket 2>&1 | Where-Object { $_ -notmatch 'already exists' }
 $made = (& npx wrangler kv namespace create STATE 2>&1 | Out-String)
 Write-Host $made
 $kvId = ''
@@ -78,11 +73,8 @@ Write-Step 'Writing the settings'
 (Get-Content 'wrangler.toml.example') |
   ForEach-Object {
     $_ -replace 'replace-with-kv-id',$kvId `
-       -replace 'you@example\.com',$AdminEmail `
-       -replace '^GITHUB_OWNER = .*',"GITHUB_OWNER = `"$Owner`"" `
-       -replace '^GITHUB_REPO = .*',"GITHUB_REPO = `"$Repo`"" `
-       -replace '^GITHUB_BRANCH = .*',"GITHUB_BRANCH = `"$Branch`"" `
-       -replace '^PUBLIC_SITE_URL = .*',"PUBLIC_SITE_URL = `"$SiteUrl`""
+       -replace '^SITE_URL = .*',"SITE_URL = `"$SiteUrl`"" `
+       -replace '^bucket_name = .*',"bucket_name = `"$Bucket`""
   } | Set-Content -Path 'wrangler.toml' -Encoding utf8
 Write-Host (Get-Content 'wrangler.toml' | Where-Object { $_ -notmatch '^#' } | Out-String)
 
@@ -97,23 +89,35 @@ Write-Step 'Credentials'
 Write-Host 'Typed in here, stored with Cloudflare, never saved to this computer.'
 Set-WorkerSecret 'GOOGLE_CLIENT_ID'     (Read-Secret 'Google client ID')
 Set-WorkerSecret 'GOOGLE_CLIENT_SECRET' (Read-Secret 'Google client secret')
-Set-WorkerSecret 'GITHUB_TOKEN'         (Read-Secret 'GitHub token that may update this repository')
+
+if($url){
+  Write-Step 'Pointing the site at the workspace'
+  & node -e "const f='../data/site.json',fs=require('fs');const j=JSON.parse(fs.readFileSync(f));j.api=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n')" $url
+}
 
 Write-Host ''
 Write-Host 'The workspace is up.' -ForegroundColor Green
 if($url){
   Write-Host ''
   Write-Host "  workspace   $url"
-  Write-Host "  board       $SiteUrl"
+  Write-Host "  site        $SiteUrl"
   Write-Host ''
-  Write-Host 'One thing left, in the browser: open the Google OAuth client and add'
-  Write-Host 'this exact address under Authorized redirect URIs.'
+  Write-Host 'Two things left.'
   Write-Host ''
-  Write-Host "  $url/oauth" -ForegroundColor Yellow
+  Write-Host '1. In the browser, open the Google OAuth client and add this exact'
+  Write-Host '   address under Authorized redirect URIs:'
   Write-Host ''
-  Write-Host 'Then open the workspace on your phone, sign in, pick the course, sync,'
-  Write-Host 'and publish. The sign-in button on the board starts working by itself.'
+  Write-Host "     $url/oauth" -ForegroundColor Yellow
+  Write-Host ''
+  Write-Host '2. data/site.json now points at the workspace. Commit and push it:'
+  Write-Host ''
+  Write-Host '     git add data/site.json'
+  Write-Host '     git commit -m "point the site at the workspace"'
+  Write-Host '     git push'
+  Write-Host ''
+  Write-Host 'Then anyone enrolled can sign in and put their course up.'
 }else{
   Write-Host 'Could not read the address back. Find it in the Cloudflare dashboard under'
-  Write-Host 'Workers, then add <that address>/oauth to the Google OAuth client.'
+  Write-Host 'Workers, add <that address>/oauth to the Google OAuth client, and put the'
+  Write-Host 'same address in the api field of data/site.json.'
 }

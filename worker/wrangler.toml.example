@@ -1,22 +1,28 @@
-name = "course-board-sync"
+name = "course-boards"
 main = "src/index.js"
 compatibility_date = "2026-08-20"
 
 [vars]
-ADMIN_EMAIL = "you@example.com"
-COURSE_SHORT = "PDE"
-GITHUB_OWNER = "saptarshihalder"
-GITHUB_REPO = "classroom-login"
-GITHUB_BRANCH = "main"
-PUBLIC_SITE_URL = "https://saptarshihalder.github.io/classroom-login/"
-# largest attachment copied to the public site, in megabytes
+# where the public site is published
+SITE_URL = "https://saptarshihalder.github.io/classroom-login/"
+# optional: only let one organisation's accounts publish, e.g. "university.edu"
+# ALLOWED_DOMAIN = ""
+# largest single attachment copied, in megabytes
 MAX_FILE_MB = "20"
-# attachments fetched per scheduled run
+# how much space one course may use, in megabytes
+COURSE_LIMIT_MB = "300"
+# attachments fetched per run
 MIRROR_BATCH = "6"
+# accounts refreshed per scheduled run
+ACCOUNTS_PER_RUN = "3"
 
 [[kv_namespaces]]
 binding = "STATE"
 id = "replace-with-kv-id"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "course-board-files"
 
 [triggers]
 crons = ["*/10 * * * *"]

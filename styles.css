@@ -92,6 +92,7 @@ main{width:min(1080px,calc(100% - clamp(20px,5vw,44px)));margin:0 auto;padding:2
   background:linear-gradient(122deg,#1c5340,#27705323 78%),var(--deep);
   color:#f3f7f4;box-shadow:var(--lift);
 }
+.bannertext{position:relative;z-index:1;max-width:640px}
 .banner h1{
   font-family:"Newsreader",Georgia,serif;font-weight:500;
   font-size:clamp(28px,4.6vw,46px);letter-spacing:-.02em;line-height:1.04;
@@ -335,4 +336,36 @@ main{width:min(1080px,calc(100% - clamp(20px,5vw,44px)));margin:0 auto;padding:2
   content:counter(step);position:absolute;left:0;top:0;
   width:20px;height:20px;border-radius:50%;display:grid;place-items:center;
   background:var(--soft);color:var(--deep);font-size:11px;font-weight:600;
+}
+
+/* course directory ---------------------------------------------------- */
+
+.toolbar.wide{margin:22px 0 14px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(288px,1fr));gap:12px}
+.course{
+  display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;
+  background:var(--paper);border:1px solid var(--line);border-radius:16px;
+  padding:16px 17px;box-shadow:var(--lift);
+}
+.course:hover{border-color:#b3bfb8}
+.badge{
+  flex:none;width:46px;height:46px;border-radius:13px;display:grid;place-items:center;
+  background:var(--soft);color:var(--deep);font-weight:700;font-size:13px;letter-spacing:.02em;
+}
+.cmeta{display:grid;gap:3px;min-width:0}
+.cmeta b{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmeta small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmeta .dim{color:#98a19b}
+
+.invite{margin-top:22px;text-align:center;padding:30px 24px}
+.invite h2{
+  font-family:"Newsreader",Georgia,serif;font-weight:500;font-size:24px;
+  text-transform:none;letter-spacing:normal;color:var(--ink);
+}
+.invite p{max-width:52ch;margin:10px auto 18px}
+
+@media(max-width:640px){
+  .grid{grid-template-columns:1fr}
+  .invite{padding:24px 18px}
 }

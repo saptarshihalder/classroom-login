@@ -12,9 +12,9 @@ jobs:
           node-version: 22
       - name: syntax
         run: |
-          node --check app.js
-          node --check login.js
-          node --check worker/src/index.js
+          for file in directory.js board.js login.js worker/src/*.js; do
+            node --check "$file"
+          done
       - name: site contents
         run: node tools/verify.mjs
       - name: worker tests

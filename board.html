@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f8f6">
+<meta name="description" content="Announcements, notes and course material, open to read.">
+<title>Course board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500&display=swap" rel="stylesheet">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to course content</a>
+
+<header class="bar">
+  <a class="mark" href="./" aria-label="All course boards">∂</a>
+  <div class="barname">
+    <strong id="barTitle">Course board</strong>
+    <span id="barSub">Loading</span>
+  </div>
+  <div class="baracts">
+    <a class="btn ghost" href="./">All courses</a>
+    <a class="btn" href="./login.html">Sign in</a>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Course sections">
+  <button role="tab" class="tab on" data-view="stream" aria-selected="true">Stream</button>
+  <button role="tab" class="tab" data-view="classwork" aria-selected="false">Classwork</button>
+  <button role="tab" class="tab" data-view="files" aria-selected="false">Files</button>
+</nav>
+
+<main id="main">
+  <section class="banner">
+    <div class="bannertext">
+      <h1 id="courseName">Course board</h1>
+      <p id="courseSection">Announcements and shared course material</p>
+    </div>
+    <div class="glyph" aria-hidden="true">∂u/∂t = α∇²u</div>
+  </section>
+
+  <div class="cols">
+    <aside class="side">
+      <section class="card">
+        <h2>About this course</h2>
+        <p id="about">Announcements and shared course material in one place, in the order they were posted.</p>
+        <dl class="facts" id="facts"></dl>
+      </section>
+      <section class="card">
+        <h2>Share it</h2>
+        <p class="tight">Anyone with the link can read the notes. No account needed.</p>
+        <button id="copy" class="btn ghost wide" type="button">Copy link</button>
+      </section>
+      <p class="sync"><i id="dot"></i><span id="syncText">loading</span></p>
+    </aside>
+
+    <div class="views">
+      <div class="toolbar">
+        <label class="search">
+          <span aria-hidden="true">⌕</span>
+          <input id="find" type="search" placeholder="Search posts and notes" autocomplete="off" aria-label="Search this course">
+        </label>
+        <span class="count" id="count"></span>
+      </div>
+
+      <section id="stream" class="view" role="tabpanel" aria-label="Stream">
+        <div class="skeleton"><div></div><div></div><div></div></div>
+      </section>
+      <section id="classwork" class="view" role="tabpanel" aria-label="Classwork" hidden></section>
+      <section id="files" class="view" role="tabpanel" aria-label="Files" hidden></section>
+    </div>
+  </div>
+</main>
+
+<footer class="foot">
+  <span>Shared by someone in this course</span>
+  <a href="./login.html">Course sign-in</a>
+</footer>
+
+<div id="viewer" class="viewer" role="dialog" aria-modal="true" aria-label="File preview" hidden>
+  <div class="vbar">
+    <div class="vname">
+      <strong id="vTitle">File</strong>
+      <span id="vMeta"></span>
+    </div>
+    <div class="vacts">
+      <a id="vOpen" class="btn ghost" target="_blank" rel="noopener">Open</a>
+      <a id="vDown" class="btn ghost" download>Download</a>
+      <button id="vClose" class="btn" type="button">Close</button>
+    </div>
+  </div>
+  <div class="vbody" id="vBody"></div>
+</div>
+
+<script src="./board.js" defer></script>
+</body>
+</html>
