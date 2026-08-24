@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f6f8f6">
-<meta name="description" content="Announcements, notes and course material for Partial Differential Equations, open to read.">
-<title>Partial Differential Equations</title>
+<meta name="description" content="Course notes and announcements, shared by students, open for anyone to read.">
+<title>Course boards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500&display=swap" rel="stylesheet">
@@ -14,88 +14,52 @@
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-<a class="skip" href="#main">Skip to course content</a>
+<a class="skip" href="#main">Skip to the courses</a>
 
 <header class="bar">
-  <a class="mark" href="./" aria-label="Course home">∂</a>
+  <a class="mark" href="./" aria-label="Course boards">∂</a>
   <div class="barname">
-    <strong id="barTitle">Partial Differential Equations</strong>
-    <span id="barSub">Course material</span>
+    <strong>Course boards</strong>
+    <span>Notes worth passing on</span>
   </div>
   <div class="baracts">
-    <button id="refresh" class="btn ghost" type="button">Refresh</button>
-    <a class="btn" href="./login.html">Sign in</a>
+    <a class="btn" href="./login.html">Share your course</a>
   </div>
 </header>
-
-<nav class="tabs" role="tablist" aria-label="Course sections">
-  <button role="tab" class="tab on" data-view="stream" aria-selected="true">Stream</button>
-  <button role="tab" class="tab" data-view="classwork" aria-selected="false">Classwork</button>
-  <button role="tab" class="tab" data-view="files" aria-selected="false">Files</button>
-</nav>
 
 <main id="main">
   <section class="banner">
     <div class="bannertext">
-      <h1 id="courseName">Partial Differential Equations</h1>
-      <p id="courseSection">Announcements and shared course material</p>
+      <h1>Course notes, open to everyone</h1>
+      <p>Announcements, handouts and PDFs from real courses, put up by the students taking them. Nothing here needs an account to read.</p>
     </div>
     <div class="glyph" aria-hidden="true">∂u/∂t = α∇²u</div>
   </section>
 
-  <div class="cols">
-    <aside class="side">
-      <section class="card">
-        <h2>About this course</h2>
-        <p id="about">Announcements and shared course material in one place, in the order they were posted.</p>
-        <dl class="facts" id="facts"></dl>
-      </section>
-      <section class="card">
-        <h2>Share it</h2>
-        <p class="tight">Anyone with the link can read the notes. No account needed.</p>
-        <button id="copy" class="btn ghost wide" type="button">Copy link</button>
-      </section>
-      <p class="sync"><i id="dot"></i><span id="syncText">loading</span></p>
-    </aside>
-
-    <div class="views">
-      <div class="toolbar">
-        <label class="search">
-          <span aria-hidden="true">⌕</span>
-          <input id="find" type="search" placeholder="Search posts and notes" autocomplete="off" aria-label="Search the course">
-        </label>
-        <span class="count" id="count"></span>
-      </div>
-
-      <section id="stream" class="view" role="tabpanel" aria-label="Stream">
-        <div class="skeleton"><div></div><div></div><div></div></div>
-      </section>
-      <section id="classwork" class="view" role="tabpanel" aria-label="Classwork" hidden></section>
-      <section id="files" class="view" role="tabpanel" aria-label="Files" hidden></section>
-    </div>
+  <div class="toolbar wide">
+    <label class="search">
+      <span aria-hidden="true">⌕</span>
+      <input id="find" type="search" placeholder="Search courses" autocomplete="off" aria-label="Search the courses">
+    </label>
+    <span class="count" id="count"></span>
   </div>
+
+  <section id="list" class="grid" aria-live="polite">
+    <div class="skeleton"><div></div><div></div><div></div></div>
+  </section>
+
+  <section class="card invite">
+    <h2>In a course worth sharing?</h2>
+    <p>If you are enrolled, you can put your own course up here. Sign in, pick the course, and choose which posts and notes people outside the class can see.</p>
+    <a class="btn" href="./login.html">Share your course</a>
+  </section>
 </main>
 
 <footer class="foot">
-  <span>Public copy of the course board</span>
+  <span>Shared by the students taking these courses</span>
   <a href="./login.html">Course sign-in</a>
 </footer>
 
-<div id="viewer" class="viewer" role="dialog" aria-modal="true" aria-label="File preview" hidden>
-  <div class="vbar">
-    <div class="vname">
-      <strong id="vTitle">File</strong>
-      <span id="vMeta"></span>
-    </div>
-    <div class="vacts">
-      <a id="vOpen" class="btn ghost" target="_blank" rel="noopener">Open</a>
-      <a id="vDown" class="btn ghost" download>Download</a>
-      <button id="vClose" class="btn" type="button">Close</button>
-    </div>
-  </div>
-  <div class="vbody" id="vBody"></div>
-</div>
-
-<script src="./app.js" defer></script>
+<script src="./directory.js" defer></script>
 </body>
 </html>

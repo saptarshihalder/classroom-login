@@ -7,9 +7,10 @@ const VIEWS=['stream','classwork','files']
 const TYPE={pdf:'PDF',image:'IMG',doc:'DOC',sheet:'XLS',slides:'PPT',video:'VID',audio:'AUD',archive:'ZIP',text:'TXT',file:'FILE'}
 
 let course={},items=[],view='stream',term='',opened=null
+let api='',slug=new URLSearchParams(location.search).get('c')||''
 
 const fsize=n=>!n?'':n>=1048576?`${(n/1048576).toFixed(1)} MB`:n>=1024?`${Math.round(n/1024)} KB`:`${n} B`
-const href=p=>`./${String(p).split('/').map(encodeURIComponent).join('/')}`
+const href=p=>`${api}/${String(p).split('/').map(encodeURIComponent).join('/')}`
 const initial=s=>(String(s||'C').trim()[0]||'C').toUpperCase()
 const clip=(s,n)=>{s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?`${s.slice(0,n).trimEnd()}…`:s}
 
@@ -195,16 +196,23 @@ function route(){
 /* ---- data ---- */
 
 async function load(){
-  let btn=q('#refresh')
-  btn.disabled=true
   try{
-    let r=await fetch(`./data/feed.json?v=${Date.now()}`,{cache:'no-store'})
-    if(!r.ok)throw Error('feed unavailable')
+    if(!api){
+      let conf=await fetch('./data/site.json',{cache:'no-store'}).then(r=>r.json())
+      api=String(conf.api||'').replace(/\/+$/,'')
+      if(!api)throw Error('nothing linked yet')
+    }
+    if(!slug)throw Error('no course asked for')
+
+    let r=await fetch(`${api}/api/board/${encodeURIComponent(slug)}?v=${Date.now()}`,{cache:'no-store'})
+    if(!r.ok)throw Error('board unavailable')
     let data=await r.json()
+    if(data.error)throw Error(data.error)
+
     course=data.course||{}
     items=(Array.isArray(data.items)?data.items:[]).sort((a,b)=>new Date(b.created||0)-new Date(a.created||0))
 
-    let name=course.name||'Partial Differential Equations'
+    let name=course.name||'Course board'
     let sub=[course.section,course.room?`Room ${course.room}`:''].filter(Boolean).join(' · ')
     q('#courseName').textContent=name
     q('#barTitle').textContent=name
@@ -213,11 +221,10 @@ async function load(){
     q('#about').textContent=course.about||'Announcements and shared course material in one place.'
     document.title=name
 
-    let count=files().length
     q('#facts').innerHTML=[
       (course.teachers||[]).length?['Taught by',course.teachers.join(', ')]:null,
       ['Posts',String(items.length)],
-      ['Files',String(count)]
+      ['Files',String(files().length)]
     ].filter(Boolean).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')
 
     q('#dot').className='ok'
@@ -226,10 +233,10 @@ async function load(){
   }catch{
     q('#dot').className='bad'
     q('#syncText').textContent='could not load'
-    q('#stream').innerHTML=empty('The course board is not answering','Give it a moment and press refresh. Published notes stay available once the board is back.')
+    q('#stream').innerHTML=empty(
+      slug?'This board is not available':'No course chosen',
+      slug?'It may have been taken down by whoever shared it, or the address is wrong.':'Pick a course from the list of boards.')
     q('#count').textContent=''
-  }finally{
-    btn.disabled=false
   }
 }
 
@@ -249,7 +256,6 @@ document.addEventListener('click',ev=>{
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape')hideFile()})
 q('#vClose').addEventListener('click',hideFile)
 q('#viewer').addEventListener('click',ev=>{if(ev.target===q('#viewer'))hideFile()})
-q('#refresh').addEventListener('click',load)
 q('#find').addEventListener('input',ev=>{term=ev.target.value.trim().toLowerCase();draw()})
 q('#copy').addEventListener('click',async()=>{
   let btn=q('#copy')
